@@ -158,7 +158,7 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => (
   </div>
 );
 
-const DashboardScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => (
+const DashboardScreen = ({ setScreen, notes, onEditNote, onCreateNew }: { setScreen: (s: Screen) => void, notes: Note[], onEditNote: (id: string) => void, onCreateNew: () => void }) => (
   <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark">
     <header className="flex items-center justify-between p-4 pb-2">
       <div className="flex size-10 items-center justify-center rounded-full bg-slate-200/50 dark:bg-slate-800/50">
@@ -186,8 +186,8 @@ const DashboardScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => (
     <main className="flex-1 overflow-y-auto px-4 pt-4 pb-24">
       <h3 className="text-lg font-bold mb-4 text-slate-900 dark:text-slate-100">Recent Notes</h3>
       <div className="grid grid-cols-2 gap-4">
-        {MOCK_NOTES.map(note => (
-          <div key={note.id} className={`flex flex-col gap-3 p-4 rounded-xl border shadow-sm cursor-pointer active:scale-95 transition-transform ${
+        {notes.map(note => (
+          <div key={note.id} onClick={() => onEditNote(note.id)} className={`flex flex-col gap-3 p-4 rounded-xl border shadow-sm cursor-pointer active:scale-95 transition-transform ${
             note.category === 'Work' ? 'bg-blue-100/80 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800/50' :
             note.category === 'Personal' ? 'bg-purple-100/80 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800/50' :
             'bg-emerald-100/80 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800/50'
@@ -207,7 +207,7 @@ const DashboardScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => (
       </div>
     </main>
     <div className="absolute bottom-24 right-6">
-      <button onClick={() => setScreen('create')} className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 active:scale-95 transition-transform">
+      <button onClick={onCreateNew} className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 active:scale-95 transition-transform">
         <span className="material-symbols-outlined text-3xl">add</span>
       </button>
     </div>
@@ -577,50 +577,57 @@ const SearchScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => (
   </div>
 );
 
-const CreateNoteScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => (
-  <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark">
-    <header className="flex items-center justify-between px-4 pt-12 pb-4 bg-background-light dark:bg-background-dark border-b border-slate-200 dark:border-slate-800">
-      <button onClick={() => setScreen('dashboard')} className="flex items-center justify-center p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
-        <span className="material-symbols-outlined text-slate-700 dark:text-slate-300">arrow_back_ios</span>
-      </button>
-      <h1 className="text-lg font-bold tracking-tight">Create New Note</h1>
-      <button onClick={() => setScreen('dashboard')} className="px-4 py-1.5 bg-primary text-white text-sm font-semibold rounded-full hover:bg-primary/90 transition-colors">Save</button>
-    </header>
-    <div className="flex gap-2 p-4 overflow-x-auto no-scrollbar">
-      <button className="flex items-center justify-center gap-1 h-8 shrink-0 rounded-full bg-primary/10 border border-primary/20 px-4 text-primary text-sm font-medium">
-        <span className="material-symbols-outlined text-sm">label</span>Personal
-      </button>
-      <button className="flex items-center justify-center gap-1 h-8 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 text-slate-600 dark:text-slate-400 text-sm font-medium">Work</button>
-      <button className="flex items-center justify-center gap-1 h-8 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 text-slate-600 dark:text-slate-400 text-sm font-medium">Ideas</button>
-      <button className="flex items-center justify-center h-8 w-8 shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400">
-        <span className="material-symbols-outlined text-sm">add</span>
-      </button>
+const CreateNoteScreen = ({ setScreen, onSave, initialNote }: { setScreen: (s: Screen) => void, onSave: (note: Partial<Note>) => void, initialNote?: Note }) => {
+  const [title, setTitle] = useState(initialNote?.title || '');
+  const [content, setContent] = useState(initialNote?.content || '');
+  const [category, setCategory] = useState<'Personal' | 'Work' | 'Ideas'>(initialNote?.category || 'Personal');
+
+  return (
+    <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark">
+      <header className="flex items-center justify-between px-4 pt-12 pb-4 bg-background-light dark:bg-background-dark border-b border-slate-200 dark:border-slate-800">
+        <button onClick={() => setScreen('dashboard')} className="flex items-center justify-center p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+          <span className="material-symbols-outlined text-slate-700 dark:text-slate-300">arrow_back_ios</span>
+        </button>
+        <h1 className="text-lg font-bold tracking-tight">{initialNote ? 'Edit Note' : 'Create New Note'}</h1>
+        <button onClick={() => onSave({ title, content, category })} className="px-4 py-1.5 bg-primary text-white text-sm font-semibold rounded-full hover:bg-primary/90 transition-colors">Save</button>
+      </header>
+      <div className="flex gap-2 p-4 overflow-x-auto no-scrollbar">
+        <button onClick={() => setCategory('Personal')} className={`flex items-center justify-center gap-1 h-8 shrink-0 rounded-full px-4 text-sm font-medium ${category === 'Personal' ? 'bg-primary/10 border border-primary/20 text-primary' : 'bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>
+          <span className="material-symbols-outlined text-sm">label</span>Personal
+        </button>
+        <button onClick={() => setCategory('Work')} className={`flex items-center justify-center gap-1 h-8 shrink-0 rounded-full px-4 text-sm font-medium ${category === 'Work' ? 'bg-primary/10 border border-primary/20 text-primary' : 'bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>
+          <span className="material-symbols-outlined text-sm">label</span>Work
+        </button>
+        <button onClick={() => setCategory('Ideas')} className={`flex items-center justify-center gap-1 h-8 shrink-0 rounded-full px-4 text-sm font-medium ${category === 'Ideas' ? 'bg-primary/10 border border-primary/20 text-primary' : 'bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'}`}>
+          <span className="material-symbols-outlined text-sm">label</span>Ideas
+        </button>
+      </div>
+      <main className="flex-1 flex flex-col px-4 space-y-4 overflow-y-auto">
+        <div className="mt-2">
+          <input value={title} onChange={e => setTitle(e.target.value)} className="w-full bg-transparent border-none p-0 text-2xl font-bold placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-0 outline-none" placeholder="Note Title" type="text" />
+        </div>
+        <div className="flex-1">
+          <textarea value={content} onChange={e => setContent(e.target.value)} className="w-full h-full bg-transparent border-none p-0 text-base leading-relaxed placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-0 outline-none resize-none" placeholder="Start writing your note here..."></textarea>
+        </div>
+      </main>
+      <footer className="bg-background-light dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-1">
+          <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">format_bold</span></button>
+          <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">format_italic</span></button>
+          <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">format_list_bulleted</span></button>
+          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+          <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">format_quote</span></button>
+        </div>
+        <div className="flex items-center gap-1">
+          <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">attach_file</span></button>
+          <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">mic</span></button>
+          <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">image</span></button>
+        </div>
+      </footer>
+      <div className="h-8 bg-background-light dark:bg-background-dark"></div>
     </div>
-    <main className="flex-1 flex flex-col px-4 space-y-4 overflow-y-auto">
-      <div className="mt-2">
-        <input className="w-full bg-transparent border-none p-0 text-2xl font-bold placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-0 outline-none" placeholder="Note Title" type="text" />
-      </div>
-      <div className="flex-1">
-        <textarea className="w-full h-full bg-transparent border-none p-0 text-base leading-relaxed placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:ring-0 outline-none resize-none" placeholder="Start writing your note here..."></textarea>
-      </div>
-    </main>
-    <footer className="bg-background-light dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
-      <div className="flex items-center gap-1">
-        <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">format_bold</span></button>
-        <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">format_italic</span></button>
-        <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">format_list_bulleted</span></button>
-        <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-        <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">format_quote</span></button>
-      </div>
-      <div className="flex items-center gap-1">
-        <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">attach_file</span></button>
-        <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">mic</span></button>
-        <button className="p-2 text-slate-600 dark:text-slate-400 hover:text-primary transition-colors"><span className="material-symbols-outlined">image</span></button>
-      </div>
-    </footer>
-    <div className="h-8 bg-background-light dark:bg-background-dark"></div>
-  </div>
-);
+  );
+};
 
 const TrashScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => (
   <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark">
@@ -665,20 +672,50 @@ const TrashScreen = ({ setScreen }: { setScreen: (s: Screen) => void }) => (
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('splash');
+  const [notes, setNotes] = useState<Note[]>(MOCK_NOTES);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+
+  const handleSaveNote = (noteData: Partial<Note>) => {
+    if (editingNoteId) {
+      setNotes(notes.map(n => n.id === editingNoteId ? { ...n, ...noteData } as Note : n));
+    } else {
+      const newNote: Note = {
+        id: Date.now().toString(),
+        title: noteData.title || 'Untitled Note',
+        content: noteData.content || '',
+        category: noteData.category || 'Personal',
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase(),
+        ...noteData
+      } as Note;
+      setNotes([newNote, ...notes]);
+    }
+    setEditingNoteId(null);
+    setScreen('dashboard');
+  };
+
+  const handleEditNote = (id: string) => {
+    setEditingNoteId(id);
+    setScreen('create');
+  };
+
+  const handleCreateNew = () => {
+    setEditingNoteId(null);
+    setScreen('create');
+  };
 
   const renderScreen = () => {
     switch (screen) {
       case 'splash': return <SplashScreen onComplete={() => setScreen('login')} />;
       case 'login': return <LoginScreen onLogin={() => setScreen('dashboard')} />;
-      case 'dashboard': return <DashboardScreen setScreen={setScreen} />;
+      case 'dashboard': return <DashboardScreen setScreen={setScreen} notes={notes} onEditNote={handleEditNote} onCreateNew={handleCreateNew} />;
       case 'folders': return <FoldersScreen setScreen={setScreen} />;
       case 'shared': return <SharedNoteScreen setScreen={setScreen} />;
       case 'settings': return <SettingsScreen setScreen={setScreen} />;
       case 'search': return <SearchScreen setScreen={setScreen} />;
-      case 'create': return <CreateNoteScreen setScreen={setScreen} />;
+      case 'create': return <CreateNoteScreen setScreen={setScreen} onSave={handleSaveNote} initialNote={notes.find(n => n.id === editingNoteId)} />;
       case 'trash': return <TrashScreen setScreen={setScreen} />;
       case 'reminders': return <RemindersScreen setScreen={setScreen} />;
-      default: return <DashboardScreen setScreen={setScreen} />;
+      default: return <DashboardScreen setScreen={setScreen} notes={notes} onEditNote={handleEditNote} onCreateNew={handleCreateNew} />;
     }
   };
 
