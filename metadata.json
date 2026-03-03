@@ -1,0 +1,5 @@
+{
+  "name": "SwiftNotes",
+  "description": "A personal and professional note-taking application with real-time sync, sharing, and organization features.",
+  "requestFramePermissions": []
+}
